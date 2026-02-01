@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Прихват БК — компактное интерактивное дерево</title>
+<title>Прихват БК — блок-схема действий</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
 mermaid.initialize({ startOnLoad:true });
@@ -18,7 +18,7 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 </head>
 <body>
 
-<h2>Ликвидация прихвата БК — компактное интерактивное дерево</h2>
+<h2>Ликвидация прихвата БК — блок-схема действий</h2>
 
 <div>
 <label>Тип прихвата</label><br>
@@ -51,14 +51,14 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 <label>Диаметр инструмента, мм</label><br>
 <input type="number" id="diameter" value="127"><br>
 
-<button onclick="solve()">Построить дерево</button>
+<button onclick="solve()">Построить блок-схему</button>
 </div>
 
 <hr>
 <div id="mermaidContainer" class="mermaid"></div>
 
 <script>
-// База знаний с пошаговыми действиями (Пустовойтенко)
+// База знаний с пошаговыми действиями
 const knowledgeBase = [
 {
   type:"differential",
@@ -108,6 +108,7 @@ function solve(){
   let tree="graph TD\nStart([Начало])\n";
 
   kb.steps.forEach((step, idx)=>{
+    // Коррекция вероятности
     let success=step.baseSuccess;
     if(d.depth>3000) success-=10;
     if(d.mudDensity>1.35) success-=10;
@@ -119,8 +120,8 @@ function solve(){
     let color= success>60 ? "green" : success>40 ? "orange" : "red";
     let warn= step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
 
-    // короткая подпись узла, полная информация через title
-    let label=`Шаг ${idx+1}<br/>Успех: ${success}%<title>
+    // Короткий текст в блоке, подробности в tooltip
+    let label=`Шаг ${idx+1} | Успех: ${success}%<title>
 Описание: ${step.action}
 Инструмент: ${step.tool}
 Ловильный инструмент: ${step.fishing}
@@ -134,9 +135,9 @@ ${warn}
     tree+= `class N${idx} ${color}\n`;
   });
 
-  tree+=`classDef green fill:#d4edda,stroke:#155724,color:#155724;\n`;
-  tree+=`classDef orange fill:#fff3cd,stroke:#856404,color:#856404;\n`;
-  tree+=`classDef red fill:#f8d7da,stroke:#721c24,color:#721c24;\n`;
+  tree+=`classDef green fill:#d4edda,stroke:#155724,color:#155724,stroke-width:2px;\n`;
+  tree+=`classDef orange fill:#fff3cd,stroke:#856404,color:#856404,stroke-width:2px;\n`;
+  tree+=`classDef red fill:#f8d7da,stroke:#721c24,color:#721c24,stroke-width:2px;\n`;
 
   document.getElementById("mermaidContainer").innerHTML=tree;
   mermaid.init(undefined, document.getElementById("mermaidContainer"));
