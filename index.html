@@ -1,75 +1,70 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Прихват БК — экспертное дерево решений (расширенное)</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <script>mermaid.initialize({ startOnLoad: true });</script>
-
-  <style>
-    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:30px; }
-    h2 { color:#1f4e79; }
-    label { font-weight:bold; }
-    input, select, button { margin:5px 0; padding:6px; width:260px; }
-    button { background:#1f4e79; color:white; border:none; cursor:pointer; }
-    .node { background:white; padding:12px; margin:10px 0; border-left:6px solid #1f4e79; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-    .warn { color:red; font-weight:bold; }
-    .tool { color:darkred; font-weight:bold; }
-    .stage { font-weight:bold; color:#1f4e79; font-size:16px; }
-    .prob { font-weight:bold; }
-    small { display:block; color:#666; margin-top:5px; }
-  </style>
+<meta charset="UTF-8">
+<title>Прихват БК — дерево решений</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad:true });</script>
+<style>
+  body { font-family: Arial, sans-serif; background:#f4f6f9; margin:30px; }
+  h2 { color:#1f4e79; }
+  label { font-weight:bold; }
+  input, select, button { margin:5px 0; padding:6px; width:260px; }
+  button { background:#1f4e79; color:white; border:none; cursor:pointer; }
+  .warn { color:red; font-weight:bold; }
+  .nodeInfo { font-size:14px; }
+  .mermaid svg { max-width: 100%; }
+</style>
 </head>
 <body>
 
-<h2>Ликвидация прихвата БК<br>(расширенная экспертная система)</h2>
+<h2>Ликвидация прихвата БК<br>(интерактивное дерево решений)</h2>
 
 <div>
-  <label>Тип прихвата</label><br>
-  <select id="stickType">
-    <option value="differential">Дифференциальный</option>
-    <option value="mechanical">Механический</option>
-    <option value="sloughing">Осыпание / обвал</option>
-    <option value="cuttings">Шламовый</option>
-  </select><br>
+<label>Тип прихвата</label><br>
+<select id="stickType">
+  <option value="differential">Дифференциальный</option>
+  <option value="mechanical">Механический</option>
+  <option value="sloughing">Осыпание / обвал</option>
+  <option value="cuttings">Шламовый</option>
+</select><br>
 
-  <label>Глубина, м</label><br>
-  <input type="number" id="depth" value="2500"><br>
+<label>Глубина, м</label><br>
+<input type="number" id="depth" value="2500"><br>
 
-  <label>Плотность раствора, г/см³</label><br>
-  <input type="number" step="0.01" id="mudDensity" value="1.20"><br>
+<label>Плотность раствора, г/см³</label><br>
+<input type="number" step="0.01" id="mudDensity" value="1.20"><br>
 
-  <label>Вязкость (Марш), с</label><br>
-  <input type="number" id="mudViscosity" value="45"><br>
+<label>Вязкость (Марш), с</label><br>
+<input type="number" id="mudViscosity" value="45"><br>
 
-  <label>Водоотдача, см³</label><br>
-  <input type="number" id="fluidLoss" value="8"><br>
+<label>Водоотдача, см³</label><br>
+<input type="number" id="fluidLoss" value="8"><br>
 
-  <label>Тип КНБК</label><br>
-  <select id="bha">
-    <option value="stabilized">Стабилизированная</option>
-    <option value="motor">С забойным двигателем</option>
-    <option value="pendulum">Маятниковая</option>
-  </select><br>
+<label>Тип КНБК</label><br>
+<select id="bha">
+  <option value="stabilized">Стабилизированная</option>
+  <option value="motor">С забойным двигателем</option>
+  <option value="pendulum">Маятниковая</option>
+</select><br>
 
-  <label>Диаметр инструмента, мм</label><br>
-  <input type="number" id="diameter" value="127"><br>
+<label>Диаметр инструмента, мм</label><br>
+<input type="number" id="diameter" value="127"><br>
 
-  <button onclick="solve()">Рассчитать</button>
+<button onclick="solve()">Построить дерево</button>
 </div>
 
 <hr>
-
-<div id="result"></div>
+<div id="mermaidContainer" class="mermaid"></div>
 
 <script>
+// База знаний
 const knowledgeBase = [
   {
     stage: "Дифференциальный прихват — базовые меры",
     baseSuccess: 70,
     condition: d => d.stickType === "differential",
-    description: "Вращение колонны с разгрузкой веса для снятия дифференциального прихвата.",
+    description: "Вращение колонны с разгрузкой веса",
     tool: "Ротор, лебёдка",
     fishing: "Не требуется",
     limits: d => d.mudDensity > 1.35 || d.depth > 3500,
@@ -79,7 +74,7 @@ const knowledgeBase = [
     stage: "Дифференциальный прихват — химическая обработка",
     baseSuccess: 55,
     condition: d => d.stickType === "differential",
-    description: "Химическая ванна с ПАВ или нефтяными реагентами для смягчения прихвата.",
+    description: "Химическая ванна с ПАВ или нефтяными реагентами",
     tool: "Химическая ванна",
     fishing: "Гидравлический способ при неудаче",
     limits: d => d.depth > 4000 || d.mudViscosity < 30,
@@ -89,7 +84,7 @@ const knowledgeBase = [
     stage: "Механический прихват",
     baseSuccess: 65,
     condition: d => d.stickType === "mechanical",
-    description: "Расхаживание с ударной нагрузкой, использование тяжёлой лебёдки.",
+    description: "Расхаживание с ударной нагрузкой",
     tool: "Лебёдка",
     fishing: "Гидроударник или ясс",
     limits: d => d.bha === "motor" && d.diameter < 127,
@@ -99,7 +94,7 @@ const knowledgeBase = [
     stage: "Осыпание / обвал",
     baseSuccess: 60,
     condition: d => d.stickType === "sloughing",
-    description: "Интенсивная промывка и проработка для удаления обвала.",
+    description: "Интенсивная промывка и проработка",
     tool: "Буровые насосы",
     fishing: "Метчик, колокол",
     limits: d => d.fluidLoss > 10 || d.mudDensity < 1.25,
@@ -109,7 +104,7 @@ const knowledgeBase = [
     stage: "Шламовый прихват",
     baseSuccess: 50,
     condition: d => d.stickType === "cuttings",
-    description: "Использование промывочной жидкости с увеличенной вязкостью для вывода шлама.",
+    description: "Использование промывочной жидкости с увеличенной вязкостью",
     tool: "Циркуляционный насос",
     fishing: "Метчик",
     limits: d => d.mudViscosity < 40,
@@ -119,7 +114,7 @@ const knowledgeBase = [
     stage: "Крайние меры",
     baseSuccess: 20,
     condition: d => true,
-    description: "Отворот и ловильные работы при невозможности ликвидации прихвата стандартными методами.",
+    description: "Отворот и ловильные работы",
     tool: "Полный набор ловильного инструмента",
     fishing: "Метчик, колокол, фрезер",
     limits: d => false,
@@ -127,6 +122,7 @@ const knowledgeBase = [
   }
 ];
 
+// Функция расчета вероятности и построения дерева
 function solve() {
   const d = {
     stickType: document.getElementById("stickType").value,
@@ -138,39 +134,33 @@ function solve() {
     diameter: +document.getElementById("diameter").value
   };
 
-  const result = document.getElementById("result");
-  result.innerHTML = "";
+  let tree = "graph TD\n";
+  tree += "Start([Начало])\n";
 
-  knowledgeBase.filter(r => r.condition(d))
-    .forEach(r => {
-      let success = r.baseSuccess;
+  knowledgeBase.filter(r => r.condition(d)).forEach((r, idx) => {
+    let success = r.baseSuccess;
+    if(d.depth>3000) success-=10;
+    if(d.mudDensity>1.35) success-=10;
+    if(d.mudViscosity<35) success-=5;
+    if(d.fluidLoss>10) success-=10;
+    if(d.diameter<127) success-=5;
+    if(success<0) success=0;
 
-      // Коррекция вероятности по ключевым параметрам
-      if (d.depth > 3000) success -= 10;
-      if (d.mudDensity > 1.35) success -= 10;
-      if (d.mudViscosity < 35) success -= 5;
-      if (d.fluidLoss > 10) success -= 10;
-      if (d.diameter < 127) success -= 5;
+    let color = success > 60 ? "green" : success>40 ? "orange" : "red";
+    let warn = r.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
 
-      if (success < 0) success = 0;
+    let nodeLabel = `${r.stage}\\nИнстр: ${r.tool}\\nЛовил: ${r.fishing}\\nУспех: ${success}%\\n${warn}`;
+    tree += `N${idx}(["${nodeLabel}"]):::${color}\n`;
+    tree += `Start --> N${idx}\n`;
+  });
 
-      let warn = r.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ при данных условиях" : "";
+  // Определяем стили узлов по цвету
+  tree += `classDef green fill:#d4edda,stroke:#155724,color:#155724;\n`;
+  tree += `classDef orange fill:#fff3cd,stroke:#856404,color:#856404;\n`;
+  tree += `classDef red fill:#f8d7da,stroke:#721c24,color:#721c24;\n`;
 
-      let color = success > 60 ? "green" : success > 40 ? "orange" : "red";
-
-      const div = document.createElement("div");
-      div.className = "node";
-      div.innerHTML = `
-        <div class="stage">${r.stage}</div>
-        ${r.description}<br>
-        <span class="tool">Инструмент: ${r.tool}</span><br>
-        <span class="tool">Ловильный инструмент: ${r.fishing}</span><br>
-        <span class="prob" style="color:${color}">Вероятность успеха: ${success}%</span><br>
-        <span class="warn">${warn}</span><br>
-        <small>Источник: ${r.source}</small>
-      `;
-      result.appendChild(div);
-    });
+  document.getElementById("mermaidContainer").innerHTML = tree;
+  mermaid.init(undefined, document.getElementById("mermaidContainer"));
 }
 </script>
 
