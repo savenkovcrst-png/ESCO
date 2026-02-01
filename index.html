@@ -2,9 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Прихват БК — блок-схема Flowchart.js</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.14.0/flowchart.min.js"></script>
+<title>Прихват БК — блок-схема (Mermaid 10+)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.5/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({ startOnLoad: true });
+</script>
 <style>
 body { font-family: Arial, sans-serif; background:#f4f6f9; margin:30px; }
 h2 { color:#1f4e79; }
@@ -28,7 +30,7 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 </head>
 <body>
 
-<h2>Ликвидация прихвата БК — блок-схема (Flowchart.js)</h2>
+<h2>Ликвидация прихвата БК — блок-схема (Mermaid 10+)</h2>
 
 <div>
 <label>Тип прихвата</label><br>
@@ -65,103 +67,8 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 </div>
 
 <hr>
-<div id="diagram"></div>
+<div id="diagram" class="mermaid"></div>
 <div class="tooltip" id="tooltip"></div>
 
 <script>
-// ----------- База знаний -------------
-const knowledgeBase = [
-  {type:"differential", steps:[
-    {action:"Проверка веса на колонне и вращение с разгрузкой", tool:"Ротор, лебёдка", fishing:"Не требуется", baseSuccess:70, limits: d=>d.mudDensity>1.35 || d.depth>3500, source:"Пустовойтенко, стр.120-125"},
-    {action:"Химическая ванна с ПАВ или нефтяными реагентами", tool:"Химическая ванна", fishing:"Гидравлический способ при неудаче", baseSuccess:55, limits: d=>d.depth>4000 || d.mudViscosity<30, source:"Пустовойтенко, стр.126"},
-    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]},
-  {type:"mechanical", steps:[
-    {action:"Расхаживание с ударной нагрузкой", tool:"Лебёдка", fishing:"Гидроударник или ясс", baseSuccess:65, limits: d=>d.bha==="motor" && d.diameter<127, source:"Пустовойтенко, стр.130"},
-    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]},
-  {type:"sloughing", steps:[
-    {action:"Интенсивная промывка и проработка обвала", tool:"Буровые насосы", fishing:"Метчик, колокол", baseSuccess:60, limits: d=>d.fluidLoss>10 || d.mudDensity<1.25, source:"Пустовойтенко, стр.140"},
-    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]},
-  {type:"cuttings", steps:[
-    {action:"Использование промывочной жидкости с увеличенной вязкостью", tool:"Циркуляционный насос", fishing:"Метчик", baseSuccess:50, limits: d=>d.mudViscosity<40, source:"Пустовойтенко, стр.145"},
-    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]}
-];
-
-// ----------- Построение диаграммы -------------
-function buildDiagram(){
-  const d={
-    stickType: document.getElementById("stickType").value,
-    depth:+document.getElementById("depth").value,
-    mudDensity:+document.getElementById("mudDensity").value,
-    mudViscosity:+document.getElementById("mudViscosity").value,
-    fluidLoss:+document.getElementById("fluidLoss").value,
-    bha:document.getElementById("bha").value,
-    diameter:+document.getElementById("diameter").value
-  };
-
-  const kb = knowledgeBase.find(k => k.type===d.stickType);
-  if(!kb){ document.getElementById("diagram").innerHTML="Нет данных для выбранного типа прихвата"; return; }
-
-  // Формируем текст диаграммы для Flowchart.js
-  let code = "st=>start: Начало|past:>http://www.google.com[blank]\n";
-  kb.steps.forEach((step, idx)=>{
-    let success=step.baseSuccess;
-    if(d.depth>3000) success-=10;
-    if(d.mudDensity>1.35) success-=10;
-    if(d.mudViscosity<35) success-=5;
-    if(d.fluidLoss>10) success-=10;
-    if(d.diameter<127) success-=5;
-    if(success<0) success=0;
-
-    let warn = step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
-
-    let color = success>60 ? "green" : success>40 ? "yellow" : "red";
-
-    code += `op${idx}=>operation: Шаг ${idx+1} | ${success}% | ${color}\n`;
-    code += `op${idx}.tooltip="Описание: ${step.action}\nИнструмент: ${step.tool}\nЛовильный инструмент: ${step.fishing}\n${warn}\nИсточник: ${step.source}"\n`;
-  });
-
-  // Соединяем шаги
-  code += "st";
-  kb.steps.forEach((step, idx)=>{ code += `->op${idx}` });
-  code += "->e\n";
-  code += "e=>end: Конец\n";
-
-  // Создаём диаграмму
-  const diagram = flowchart.parse(code);
-  document.getElementById("diagram").innerHTML="";
-  diagram.drawSVG('diagram', {
-    'line-width': 2,
-    'line-length': 50,
-    'text-margin': 10,
-    'font-size': 12,
-    'font-color': 'black',
-    'element-color': '#555',
-    'fill': '#f9f9f9',
-    'yes-text': 'да',
-    'no-text': 'нет',
-    'arrow-end': 'block',
-    'scale': 1
-  });
-
-  // Tooltip при наведении
-  const tooltip = document.getElementById("tooltip");
-  const nodes = document.querySelectorAll("#diagram > svg > g > rect");
-  nodes.forEach((node, idx)=>{
-    if(idx==0 || idx>kb.steps.length) return; // пропускаем Start и End
-    node.addEventListener("mouseover", e=>{
-      const step=kb.steps[idx-1];
-      tooltip.style.display="block";
-      tooltip.innerText=`Описание: ${step.action}\nИнструмент: ${step.tool}\nЛовильный инструмент: ${step.fishing}\nВероятность успеха: ${step.baseSuccess}%\n${step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : ""}\nИсточник: ${step.source}`;
-      tooltip.style.left=(e.pageX+10)+"px";
-      tooltip.style.top=(e.pageY+10)+"px";
-    });
-    node.addEventListener("mouseout", ()=>{ tooltip.style.display="none"; });
-  });
-}
-</script>
-</body>
-</html>
+// ---------
