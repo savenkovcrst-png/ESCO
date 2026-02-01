@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <title>Прихват БК — интерактивное дерево с подсказками</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({ startOnLoad:true });</script>
+<script>
+mermaid.initialize({ startOnLoad:true });
+</script>
 <style>
 body { font-family: Arial, sans-serif; background:#f4f6f9; margin:30px; }
 h2 { color:#1f4e79; }
@@ -56,7 +58,7 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 <div id="mermaidContainer" class="mermaid"></div>
 
 <script>
-// База знаний с пошаговыми действиями
+// База знаний с пошаговыми действиями (Пустовойтенко)
 const knowledgeBase = [
 {
   type:"differential",
@@ -106,6 +108,7 @@ function solve(){
   let tree="graph TD\nStart([Начало])\n";
 
   kb.steps.forEach((step, idx)=>{
+    // Коррекция вероятности
     let success=step.baseSuccess;
     if(d.depth>3000) success-=10;
     if(d.mudDensity>1.35) success-=10;
@@ -114,25 +117,31 @@ function solve(){
     if(d.diameter<127) success-=5;
     if(success<0) success=0;
 
+    // Цвет по вероятности
     let color= success>60 ? "green" : success>40 ? "orange" : "red";
     let warn= step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
-    let titleText=`Описание: ${step.action}\nИнструмент: ${step.tool}\nЛовильный инструмент: ${step.fishing}\nВероятность успеха: ${success}%\n${warn}\nИсточник: ${step.source}`;
-    let label=`Шаг ${idx+1}<br/>Вероятность успеха: ${success}%`;
+
+    // Текст узла и tooltip через <title>
+    let label=`Шаг ${idx+1}<br/>Вероятность успеха: ${success}%<title>
+Описание: ${step.action}
+Инструмент: ${step.tool}
+Ловильный инструмент: ${step.fishing}
+Вероятность успеха: ${success}%
+${warn}
+Источник: ${step.source}
+</title>`;
 
     tree+=`N${idx}(["${label}"])\n`;
-    tree+= idx===0 ? `Start --> N0\n` : `N${idx-1} --> N${idx}\n`;
-    tree+= `click N${idx} call alertTitle "${titleText}"\n`;
+    tree+= idx===0 ? "Start --> N0\n" : `N${idx-1} --> N${idx}\n`;
+    tree+= `class N${idx} ${color}\n`;
   });
 
+  // Цветовые классы
   tree+=`classDef green fill:#d4edda,stroke:#155724,color:#155724;\n`;
   tree+=`classDef orange fill:#fff3cd,stroke:#856404,color:#856404;\n`;
   tree+=`classDef red fill:#f8d7da,stroke:#721c24,color:#721c24;\n`;
 
   document.getElementById("mermaidContainer").innerHTML=tree;
-
-  // Функция для клика/hover с подсказкой
-  window.alertTitle=(msg)=>alert(msg);
-
   mermaid.init(undefined, document.getElementById("mermaidContainer"));
 }
 </script>
