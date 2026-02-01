@@ -2,23 +2,21 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Прихват БК — дерево решений</title>
+<title>Прихват БК — интерактивное дерево с подсказками</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>mermaid.initialize({ startOnLoad:true });</script>
 <style>
-  body { font-family: Arial, sans-serif; background:#f4f6f9; margin:30px; }
-  h2 { color:#1f4e79; }
-  label { font-weight:bold; }
-  input, select, button { margin:5px 0; padding:6px; width:260px; }
-  button { background:#1f4e79; color:white; border:none; cursor:pointer; }
-  .warn { color:red; font-weight:bold; }
-  .nodeInfo { font-size:14px; }
-  .mermaid svg { max-width: 100%; }
+body { font-family: Arial, sans-serif; background:#f4f6f9; margin:30px; }
+h2 { color:#1f4e79; }
+label { font-weight:bold; }
+input, select, button { margin:5px 0; padding:6px; width:260px; }
+button { background:#1f4e79; color:white; border:none; cursor:pointer; }
+.mermaid svg { max-width:100%; }
 </style>
 </head>
 <body>
 
-<h2>Ликвидация прихвата БК<br>(интерактивное дерево решений)</h2>
+<h2>Ликвидация прихвата БК — интерактивное дерево с подсказками</h2>
 
 <div>
 <label>Тип прихвата</label><br>
@@ -51,94 +49,64 @@
 <label>Диаметр инструмента, мм</label><br>
 <input type="number" id="diameter" value="127"><br>
 
-<button onclick="solve()">Построить дерево</button>
+<button onclick="solve()">Построить интерактивное дерево</button>
 </div>
 
 <hr>
 <div id="mermaidContainer" class="mermaid"></div>
 
 <script>
-// База знаний
+// База знаний с пошаговыми действиями
 const knowledgeBase = [
-  {
-    stage: "Дифференциальный прихват — базовые меры",
-    baseSuccess: 70,
-    condition: d => d.stickType === "differential",
-    description: "Вращение колонны с разгрузкой веса",
-    tool: "Ротор, лебёдка",
-    fishing: "Не требуется",
-    limits: d => d.mudDensity > 1.35 || d.depth > 3500,
-    source: "Пустовойтенко, стр. 120-125"
-  },
-  {
-    stage: "Дифференциальный прихват — химическая обработка",
-    baseSuccess: 55,
-    condition: d => d.stickType === "differential",
-    description: "Химическая ванна с ПАВ или нефтяными реагентами",
-    tool: "Химическая ванна",
-    fishing: "Гидравлический способ при неудаче",
-    limits: d => d.depth > 4000 || d.mudViscosity < 30,
-    source: "Пустовойтенко, стр. 126"
-  },
-  {
-    stage: "Механический прихват",
-    baseSuccess: 65,
-    condition: d => d.stickType === "mechanical",
-    description: "Расхаживание с ударной нагрузкой",
-    tool: "Лебёдка",
-    fishing: "Гидроударник или ясс",
-    limits: d => d.bha === "motor" && d.diameter < 127,
-    source: "Пустовойтенко, стр. 130"
-  },
-  {
-    stage: "Осыпание / обвал",
-    baseSuccess: 60,
-    condition: d => d.stickType === "sloughing",
-    description: "Интенсивная промывка и проработка",
-    tool: "Буровые насосы",
-    fishing: "Метчик, колокол",
-    limits: d => d.fluidLoss > 10 || d.mudDensity < 1.25,
-    source: "Пустовойтенко, стр. 140"
-  },
-  {
-    stage: "Шламовый прихват",
-    baseSuccess: 50,
-    condition: d => d.stickType === "cuttings",
-    description: "Использование промывочной жидкости с увеличенной вязкостью",
-    tool: "Циркуляционный насос",
-    fishing: "Метчик",
-    limits: d => d.mudViscosity < 40,
-    source: "Пустовойтенко, стр. 145"
-  },
-  {
-    stage: "Крайние меры",
-    baseSuccess: 20,
-    condition: d => true,
-    description: "Отворот и ловильные работы",
-    tool: "Полный набор ловильного инструмента",
-    fishing: "Метчик, колокол, фрезер",
-    limits: d => false,
-    source: "Пустовойтенко, стр. 150"
-  }
+{
+  type:"differential",
+  steps:[
+    {action:"Проверка веса на колонне и вращение с разгрузкой", tool:"Ротор, лебёдка", fishing:"Не требуется", baseSuccess:70, limits: d=>d.mudDensity>1.35 || d.depth>3500, source:"Пустовойтенко, стр.120-125"},
+    {action:"Химическая ванна с ПАВ или нефтяными реагентами", tool:"Химическая ванна", fishing:"Гидравлический способ при неудаче", baseSuccess:55, limits: d=>d.depth>4000 || d.mudViscosity<30, source:"Пустовойтенко, стр.126"},
+    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
+  ]
+},
+{
+  type:"mechanical",
+  steps:[
+    {action:"Расхаживание с ударной нагрузкой", tool:"Лебёдка", fishing:"Гидроударник или ясс", baseSuccess:65, limits: d=>d.bha==="motor" && d.diameter<127, source:"Пустовойтенко, стр.130"},
+    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
+  ]
+},
+{
+  type:"sloughing",
+  steps:[
+    {action:"Интенсивная промывка и проработка обвала", tool:"Буровые насосы", fishing:"Метчик, колокол", baseSuccess:60, limits: d=>d.fluidLoss>10 || d.mudDensity<1.25, source:"Пустовойтенко, стр.140"},
+    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
+  ]
+},
+{
+  type:"cuttings",
+  steps:[
+    {action:"Использование промывочной жидкости с увеличенной вязкостью", tool:"Циркуляционный насос", fishing:"Метчик", baseSuccess:50, limits: d=>d.mudViscosity<40, source:"Пустовойтенко, стр.145"},
+    {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
+  ]
+}
 ];
 
-// Функция расчета вероятности и построения дерева
-function solve() {
-  const d = {
+function solve(){
+  const d={
     stickType: document.getElementById("stickType").value,
-    depth: +document.getElementById("depth").value,
-    mudDensity: +document.getElementById("mudDensity").value,
-    mudViscosity: +document.getElementById("mudViscosity").value,
-    fluidLoss: +document.getElementById("fluidLoss").value,
-    bha: document.getElementById("bha").value,
-    diameter: +document.getElementById("diameter").value
+    depth:+document.getElementById("depth").value,
+    mudDensity:+document.getElementById("mudDensity").value,
+    mudViscosity:+document.getElementById("mudViscosity").value,
+    fluidLoss:+document.getElementById("fluidLoss").value,
+    bha:document.getElementById("bha").value,
+    diameter:+document.getElementById("diameter").value
   };
 
-  let tree = "graph TD\n";
-  tree += "Start([Начало])\n";
+  const kb=knowledgeBase.find(k=>k.type===d.stickType);
+  if(!kb){ document.getElementById("mermaidContainer").innerHTML="Нет данных для выбранного типа прихвата"; return; }
 
-  knowledgeBase.filter(r => r.condition(d)).forEach((r, idx) => {
-    let success = r.baseSuccess;
+  let tree="graph TD\nStart([Начало])\n";
+
+  kb.steps.forEach((step, idx)=>{
+    let success=step.baseSuccess;
     if(d.depth>3000) success-=10;
     if(d.mudDensity>1.35) success-=10;
     if(d.mudViscosity<35) success-=5;
@@ -146,23 +114,27 @@ function solve() {
     if(d.diameter<127) success-=5;
     if(success<0) success=0;
 
-    let color = success > 60 ? "green" : success>40 ? "orange" : "red";
-    let warn = r.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
+    let color= success>60 ? "green" : success>40 ? "orange" : "red";
+    let warn= step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
+    let titleText=`Описание: ${step.action}\nИнструмент: ${step.tool}\nЛовильный инструмент: ${step.fishing}\nВероятность успеха: ${success}%\n${warn}\nИсточник: ${step.source}`;
+    let label=`Шаг ${idx+1}<br/>Вероятность успеха: ${success}%`;
 
-    let nodeLabel = `${r.stage}\\nИнстр: ${r.tool}\\nЛовил: ${r.fishing}\\nУспех: ${success}%\\n${warn}`;
-    tree += `N${idx}(["${nodeLabel}"]):::${color}\n`;
-    tree += `Start --> N${idx}\n`;
+    tree+=`N${idx}(["${label}"])\n`;
+    tree+= idx===0 ? `Start --> N0\n` : `N${idx-1} --> N${idx}\n`;
+    tree+= `click N${idx} call alertTitle "${titleText}"\n`;
   });
 
-  // Определяем стили узлов по цвету
-  tree += `classDef green fill:#d4edda,stroke:#155724,color:#155724;\n`;
-  tree += `classDef orange fill:#fff3cd,stroke:#856404,color:#856404;\n`;
-  tree += `classDef red fill:#f8d7da,stroke:#721c24,color:#721c24;\n`;
+  tree+=`classDef green fill:#d4edda,stroke:#155724,color:#155724;\n`;
+  tree+=`classDef orange fill:#fff3cd,stroke:#856404,color:#856404;\n`;
+  tree+=`classDef red fill:#f8d7da,stroke:#721c24,color:#721c24;\n`;
 
-  document.getElementById("mermaidContainer").innerHTML = tree;
+  document.getElementById("mermaidContainer").innerHTML=tree;
+
+  // Функция для клика/hover с подсказкой
+  window.alertTitle=(msg)=>alert(msg);
+
   mermaid.init(undefined, document.getElementById("mermaidContainer"));
 }
 </script>
-
 </body>
 </html>
