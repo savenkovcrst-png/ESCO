@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Прихват БК — интерактивное дерево с подсказками</title>
+<title>Прихват БК — компактное интерактивное дерево</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
 mermaid.initialize({ startOnLoad:true });
@@ -18,7 +18,7 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 </head>
 <body>
 
-<h2>Ликвидация прихвата БК — интерактивное дерево с подсказками</h2>
+<h2>Ликвидация прихвата БК — компактное интерактивное дерево</h2>
 
 <div>
 <label>Тип прихвата</label><br>
@@ -51,7 +51,7 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 <label>Диаметр инструмента, мм</label><br>
 <input type="number" id="diameter" value="127"><br>
 
-<button onclick="solve()">Построить интерактивное дерево</button>
+<button onclick="solve()">Построить дерево</button>
 </div>
 
 <hr>
@@ -108,7 +108,6 @@ function solve(){
   let tree="graph TD\nStart([Начало])\n";
 
   kb.steps.forEach((step, idx)=>{
-    // Коррекция вероятности
     let success=step.baseSuccess;
     if(d.depth>3000) success-=10;
     if(d.mudDensity>1.35) success-=10;
@@ -117,12 +116,11 @@ function solve(){
     if(d.diameter<127) success-=5;
     if(success<0) success=0;
 
-    // Цвет по вероятности
     let color= success>60 ? "green" : success>40 ? "orange" : "red";
     let warn= step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
 
-    // Текст узла и tooltip через <title>
-    let label=`Шаг ${idx+1}<br/>Вероятность успеха: ${success}%<title>
+    // короткая подпись узла, полная информация через title
+    let label=`Шаг ${idx+1}<br/>Успех: ${success}%<title>
 Описание: ${step.action}
 Инструмент: ${step.tool}
 Ловильный инструмент: ${step.fishing}
@@ -136,7 +134,6 @@ ${warn}
     tree+= `class N${idx} ${color}\n`;
   });
 
-  // Цветовые классы
   tree+=`classDef green fill:#d4edda,stroke:#155724,color:#155724;\n`;
   tree+=`classDef orange fill:#fff3cd,stroke:#856404,color:#856404;\n`;
   tree+=`classDef red fill:#f8d7da,stroke:#721c24,color:#721c24;\n`;
