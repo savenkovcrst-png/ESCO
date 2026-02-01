@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Экспертная система аварий при бурении</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h2>Экспертная система по авариям и осложнениям при бурении</h2>
+
+<select id="accident">
+<option value="stuck_pipe">Прихваты</option>
+<option value="pipe_failure">Обрывы колонны</option>
+<option value="circulation_loss">Потери циркуляции</option>
+<option value="kicks">ГНВП</option>
+<option value="collapses">Обвалы</option>
+<option value="motors">Аварии ДЗД</option>
+<option value="tool_failure">Разрушение инструмента</option>
+</select>
+
+<button onclick="solve()">Показать решения</button>
+<div id="result"></div>
+
+<script src="data/stuck_pipe.js"></script>
+<script src="data/pipe_failure.js"></script>
+<script src="data/circulation_loss.js"></script>
+<script src="data/kicks.js"></script>
+<script src="data/collapses.js"></script>
+<script src="data/motors.js"></script>
+<script src="data/tool_failure.js"></script>
+<script src="logic.js"></script>
+</body>
+</html>
