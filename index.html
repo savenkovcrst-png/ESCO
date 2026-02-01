@@ -2,18 +2,16 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Прихват БК — блок-схема действий</title>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script>
-mermaid.initialize({ startOnLoad:true });
-</script>
+<title>Прихват БК — блок-схема Flowchart.js</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.14.0/flowchart.min.js"></script>
 <style>
 body { font-family: Arial, sans-serif; background:#f4f6f9; margin:30px; }
 h2 { color:#1f4e79; }
 label { font-weight:bold; }
 input, select, button { margin:5px 0; padding:6px; width:260px; }
 button { background:#1f4e79; color:white; border:none; cursor:pointer; }
-.mermaid svg { max-width:100%; }
+#diagram { border:1px solid #ccc; padding:20px; min-height:300px; background:#fff; }
 .tooltip {
   position: absolute;
   background: #fff;
@@ -26,12 +24,11 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
   z-index: 1000;
   white-space: pre-line;
 }
-.node rect { cursor: pointer; }
 </style>
 </head>
 <body>
 
-<h2>Ликвидация прихвата БК — блок-схема действий</h2>
+<h2>Ликвидация прихвата БК — блок-схема (Flowchart.js)</h2>
 
 <div>
 <label>Тип прихвата</label><br>
@@ -64,49 +61,37 @@ button { background:#1f4e79; color:white; border:none; cursor:pointer; }
 <label>Диаметр инструмента, мм</label><br>
 <input type="number" id="diameter" value="127"><br>
 
-<button onclick="solve()">Построить блок-схему</button>
+<button onclick="buildDiagram()">Построить блок-схему</button>
 </div>
 
 <hr>
-<div id="mermaidContainer" class="mermaid"></div>
+<div id="diagram"></div>
 <div class="tooltip" id="tooltip"></div>
 
 <script>
-// ---------------- База знаний ----------------
+// ----------- База знаний -------------
 const knowledgeBase = [
-{
-  type:"differential",
-  steps:[
+  {type:"differential", steps:[
     {action:"Проверка веса на колонне и вращение с разгрузкой", tool:"Ротор, лебёдка", fishing:"Не требуется", baseSuccess:70, limits: d=>d.mudDensity>1.35 || d.depth>3500, source:"Пустовойтенко, стр.120-125"},
     {action:"Химическая ванна с ПАВ или нефтяными реагентами", tool:"Химическая ванна", fishing:"Гидравлический способ при неудаче", baseSuccess:55, limits: d=>d.depth>4000 || d.mudViscosity<30, source:"Пустовойтенко, стр.126"},
     {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]
-},
-{
-  type:"mechanical",
-  steps:[
+  ]},
+  {type:"mechanical", steps:[
     {action:"Расхаживание с ударной нагрузкой", tool:"Лебёдка", fishing:"Гидроударник или ясс", baseSuccess:65, limits: d=>d.bha==="motor" && d.diameter<127, source:"Пустовойтенко, стр.130"},
     {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]
-},
-{
-  type:"sloughing",
-  steps:[
+  ]},
+  {type:"sloughing", steps:[
     {action:"Интенсивная промывка и проработка обвала", tool:"Буровые насосы", fishing:"Метчик, колокол", baseSuccess:60, limits: d=>d.fluidLoss>10 || d.mudDensity<1.25, source:"Пустовойтенко, стр.140"},
     {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]
-},
-{
-  type:"cuttings",
-  steps:[
+  ]},
+  {type:"cuttings", steps:[
     {action:"Использование промывочной жидкости с увеличенной вязкостью", tool:"Циркуляционный насос", fishing:"Метчик", baseSuccess:50, limits: d=>d.mudViscosity<40, source:"Пустовойтенко, стр.145"},
     {action:"Крайние меры: отворот и ловильные работы", tool:"Полный набор ловильного инструмента", fishing:"Метчик, колокол, фрезер", baseSuccess:20, limits: d=>false, source:"Пустовойтенко, стр.150"}
-  ]
-}
+  ]}
 ];
 
-// ---------------- Функция построения блок-схемы ----------------
-function solve(){
+// ----------- Построение диаграммы -------------
+function buildDiagram(){
   const d={
     stickType: document.getElementById("stickType").value,
     depth:+document.getElementById("depth").value,
@@ -117,11 +102,11 @@ function solve(){
     diameter:+document.getElementById("diameter").value
   };
 
-  const kb=knowledgeBase.find(k=>k.type===d.stickType);
-  if(!kb){ document.getElementById("mermaidContainer").innerHTML="Нет данных для выбранного типа прихвата"; return; }
+  const kb = knowledgeBase.find(k => k.type===d.stickType);
+  if(!kb){ document.getElementById("diagram").innerHTML="Нет данных для выбранного типа прихвата"; return; }
 
-  let tree="graph TD\nStart([Начало])\n";
-
+  // Формируем текст диаграммы для Flowchart.js
+  let code = "st=>start: Начало|past:>http://www.google.com[blank]\n";
   kb.steps.forEach((step, idx)=>{
     let success=step.baseSuccess;
     if(d.depth>3000) success-=10;
@@ -131,43 +116,50 @@ function solve(){
     if(d.diameter<127) success-=5;
     if(success<0) success=0;
 
-    let color= success>60 ? "green" : success>40 ? "orange" : "red";
-    let warn= step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
+    let warn = step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : "";
 
-    let label=`Шаг ${idx+1} | ${success}%`;
-    tree+=`N${idx}["${label}"]\n`;
-    tree+= idx===0 ? "Start --> N0\n" : `N${idx-1} --> N${idx}\n`;
-    tree+= `class N${idx} ${color}\n`;
+    let color = success>60 ? "green" : success>40 ? "yellow" : "red";
+
+    code += `op${idx}=>operation: Шаг ${idx+1} | ${success}% | ${color}\n`;
+    code += `op${idx}.tooltip="Описание: ${step.action}\nИнструмент: ${step.tool}\nЛовильный инструмент: ${step.fishing}\n${warn}\nИсточник: ${step.source}"\n`;
   });
 
-  tree+=`classDef green fill:#d4edda,stroke:#155724,color:#155724,stroke-width:2px;\n`;
-  tree+=`classDef orange fill:#fff3cd,stroke:#856404,color:#856404,stroke-width:2px;\n`;
-  tree+=`classDef red fill:#f8d7da,stroke:#721c24,color:#721c24,stroke-width:2px;\n`;
+  // Соединяем шаги
+  code += "st";
+  kb.steps.forEach((step, idx)=>{ code += `->op${idx}` });
+  code += "->e\n";
+  code += "e=>end: Конец\n";
 
-  document.getElementById("mermaidContainer").innerHTML=tree;
-  mermaid.init(undefined, document.getElementById("mermaidContainer"));
+  // Создаём диаграмму
+  const diagram = flowchart.parse(code);
+  document.getElementById("diagram").innerHTML="";
+  diagram.drawSVG('diagram', {
+    'line-width': 2,
+    'line-length': 50,
+    'text-margin': 10,
+    'font-size': 12,
+    'font-color': 'black',
+    'element-color': '#555',
+    'fill': '#f9f9f9',
+    'yes-text': 'да',
+    'no-text': 'нет',
+    'arrow-end': 'block',
+    'scale': 1
+  });
 
-  // Добавляем кастомный tooltip
-  const tooltip=document.getElementById("tooltip");
-  const nodes=document.querySelectorAll(".node rect");
+  // Tooltip при наведении
+  const tooltip = document.getElementById("tooltip");
+  const nodes = document.querySelectorAll("#diagram > svg > g > rect");
   nodes.forEach((node, idx)=>{
-    node.addEventListener("mouseover", (e)=>{
-      const step=kb.steps[idx];
-      const success=step.baseSuccess;
+    if(idx==0 || idx>kb.steps.length) return; // пропускаем Start и End
+    node.addEventListener("mouseover", e=>{
+      const step=kb.steps[idx-1];
       tooltip.style.display="block";
-      tooltip.innerText=
-`Описание: ${step.action}
-Инструмент: ${step.tool}
-Ловильный инструмент: ${step.fishing}
-Вероятность успеха: ${success}%
-${step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : ""}
-Источник: ${step.source}`;
+      tooltip.innerText=`Описание: ${step.action}\nИнструмент: ${step.tool}\nЛовильный инструмент: ${step.fishing}\nВероятность успеха: ${step.baseSuccess}%\n${step.limits(d) ? "⚠ НЕ РЕКОМЕНДУЕТСЯ" : ""}\nИсточник: ${step.source}`;
       tooltip.style.left=(e.pageX+10)+"px";
       tooltip.style.top=(e.pageY+10)+"px";
     });
-    node.addEventListener("mouseout", ()=>{
-      tooltip.style.display="none";
-    });
+    node.addEventListener("mouseout", ()=>{ tooltip.style.display="none"; });
   });
 }
 </script>
