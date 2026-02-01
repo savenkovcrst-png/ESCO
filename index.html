@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Прихват БК — экспертное дерево решений</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true });</script>
+
+  <style>
+    body { font-family: Arial; background:#f4f6f9; margin:30px; }
+    h2 { color:#1f4e79; }
+    input, select, button { margin:5px 0; padding:6px; width:260px; }
+    button { background:#1f4e79; color:white; border:none; cursor:pointer; }
+    .node { background:white; padding:12px; margin:10px 0; border-left:6px solid #1f4e79; }
+    .warn { color:red; font-weight:bold; }
+    .tool { color:darkred; font-weight:bold; }
+    .stage { font-weight:bold; color:#1f4e79; }
+    .prob { font-weight:bold; }
+  </style>
+</head>
+<body>
+
+<h2>Ликвидация прихвата БК<br>(экспертная система)</h2>
+
+<label>Тип прихвата</label><br>
+<select id="stickType">
+  <option value="differential">Дифференциальный</option>
+  <option value="mechanical">Механический</option>
+  <option value="sloughing">Осыпание / обвал</option>
+  <option value="cuttings">Шламовый</option>
+</select><br>
+
+<label>Глубина, м</label><br>
+<input type="number" id="depth" value="2500"><br>
+
+<label>Плотность раствора, г/см³</label><br>
+<input type="number" step="0.01" id="mudDensity" value="1.20"><br>
+
+<label>Вязкость (Марш), с</label><br>
+<input type="number" id="mudViscosity" value="45"><br>
+
+<label>Водоотдача, см³</label><br>
+<input type="number" id="fluidLoss" value="8"><br>
+
+<label>Тип КНБК</label><br>
+<select id="bha">
+  <option value="stabilized">Стабилизированная</option>
+  <option value="motor">С забойным двигателем</option>
+  <option value="pendulum">Маятниковая</option>
+</select><br>
+
+<label>Диаметр инструмента, мм</label><br>
+<input type="number" id="diameter" value="127"><br>
+
+<button onclick="solve()">Рассчитать</button>
+
+<hr>
+
+<div id="result"></div>
+
+<script src="knowledge.js"></script>
+<script src="logic.js"></script>
+
+</body>
+</html>
